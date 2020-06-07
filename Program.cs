@@ -2,102 +2,40 @@
 using System.Linq;
 using System.Text;
 using System;
+using System.Diagnostics;
 
-namespace SokobanSolver
+namespace Koelkasttry
 {
-    public class SokobanSolver
+    class Program
     {
-        public static void Main(string[] a)
-        {
-            string readLine = Console.ReadLine();
-            string[] splitLine = readLine.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+        private int playerX, playerY, BoxX, BoxY, goalX, goalY, nCols;
+        uint destBoard, currBoard;
+        private string Playboard;
 
-            int x = 0;
-            string temp = "";
-            string[] level = new string[int.Parse(splitLine[1])];
-
-           //if (splitLine[0].CompareTo("30") == 0 && splitLine[1].CompareTo("50") == 0 && splitLine[2].CompareTo("L") == 0)
-           // {
-           //     Console.WriteLine("No solution");
-          //  }
-         //   else if ( splitLine[0].CompareTo("196") == 0 && splitLine[1].CompareTo("22") == 0 && splitLine[2].CompareTo("L") == 0) {
-          //      Console.WriteLine("2304");
-           // }else
-                { 
-                while (x < int.Parse(splitLine[1]))
-                {
-                   temp += Console.ReadLine();  
-                   x++;
-                }
-
-                int count = int.Parse(splitLine[1]) * int.Parse(splitLine[0]);
-                int o = 0;
-
-                for (int i = 0; i < int.Parse(splitLine[1]); i++)
-                {
-                    string m = ""; 
-
-                    for (int c = 0; c < int.Parse(splitLine[0]); c++)
-                    {
-                        m += temp[o];
-                        o++;
-                    }
-
-                    level[i] = m;
-                }
-
-                string solved = new SokobanSolver(level).Solve();
-
-                if ("L".CompareTo(splitLine[2]) == 0 && solved != "No solution")
-                {
-                    Console.WriteLine(solved.Length);
-                }
-                else if ("P".CompareTo(splitLine[2]) == 0 && solved != "No solution")
-                {
-                    Console.WriteLine(solved.Length);
-                    Console.WriteLine(solved);
-                }
-                else
-                {
-                    Console.WriteLine(solved);
-                }
-            }
-           
-        }
-        private class Board
-        {
-            public string Cur { get; internal set; }
-            public string Sol { get; internal set; }
-            public int X { get; internal set; }
-            public int Y { get; internal set; }
-
-            public Board(string cur, string sol, int x, int y)
-            {
-                Cur = cur;
-                Sol = sol;
-                X = x;
-                Y = y;
-            }
-        }
-
-        private string destBoard, currBoard;
-        private int playerX, playerY, nCols;
-
-        SokobanSolver(string[] board)
+        Program(string[] board)
         {
             nCols = board[0].Length;
-            StringBuilder destBuf = new StringBuilder();
-            StringBuilder currBuf = new StringBuilder();
+            StringBuilder playboard = new StringBuilder();
 
             for (int r = 0; r < board.Length; r++)
             {
                 for (int c = 0; c < nCols; c++)
                 {
-
                     char ch = board[r][c];
 
-                    destBuf.Append(ch != '!' && ch != '+' ? ch : '.');
-                    currBuf.Append(ch != '?' ? ch : '.');
+                    playboard.Append(ch != '?' && ch != '!' && ch != '+' ? ch : '.');
+
+                    if (ch == '!')
+                    {
+                        this.BoxX = c;
+                        this.BoxY = r;
+                    }
+
+                    if (ch == '?')
+                    {
+                        this.goalX = c;
+                        this.goalY = r;
+                    }
 
                     if (ch == '+')
                     {
@@ -106,80 +44,112 @@ namespace SokobanSolver
                     }
                 }
             }
-            destBoard = destBuf.ToString();
-            currBoard = currBuf.ToString();
+
+            destBoard = (uint)goalY + ((uint)goalX << 8);
+            currBoard = (uint)BoxY + ((uint)BoxX << 8) + ((uint)playerY << 16) + ((uint)playerX << 24);
+
+            Playboard = playboard.ToString();
         }
 
-        private string Move(int x, int y, int dx, int dy, string trialBoard)
+        private class Board
         {
+            public uint Cur { get; internal set; }
+            public string Sol { get; internal set; }
+            public int X { get; internal set; }
+            public int Y { get; internal set; }
 
-            int newPlayerPos = (y + dy) * nCols + x + dx;
-
-            if (trialBoard[newPlayerPos] != '.')
-                return null;
-
-            char[] trial = trialBoard.ToCharArray();
-            trial[y * nCols + x] = '.';
-            trial[newPlayerPos] = '+';
-
-            return new string(trial);
+            public Board(uint cur, string sol, int x, int y)
+            {
+                Cur = cur;
+                Sol = sol;
+                X = x;
+                Y = y;
+            }
         }
 
-        private string Push(int x, int y, int dx, int dy, string trialBoard)
+        //------------------------
+        static void Main()
         {
+            string readLine = Console.ReadLine();
+            string[] splitLine = readLine.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
-            int newBoxPos = (y + 2 * dy) * nCols + x + 2 * dx;
+            int x = 0;
+            string temp = "";
+            string[] level = new string[int.Parse(splitLine[1])];
 
-            if (trialBoard[newBoxPos] != '.')
-                return null;
+            while (x < int.Parse(splitLine[1]))
+            {
+                temp += Console.ReadLine();
+                x++;
+            }
 
-            char[] trial = trialBoard.ToCharArray();
-            trial[y * nCols + x] = '.';
-            trial[(y + dy) * nCols + x + dx] = '+';
-            trial[newBoxPos] = '!';
+            int o = 0;
 
-            return new string(trial);
+            for (int i = 0; i < int.Parse(splitLine[1]); i++)
+            {
+                string m = "";
+
+                for (int c = 0; c < int.Parse(splitLine[0]); c++)
+                {
+                    m += temp[o];
+                    o++;
+                }
+
+                level[i] = m;
+            }
+
+            string solved = new Program(level).Solve();
+
+            if ("L".CompareTo(splitLine[2]) == 0 && solved != "No solution")
+            {
+                Console.WriteLine(solved.Length);
+            }
+            else if ("P".CompareTo(splitLine[2]) == 0 && solved != "No solution")
+            {
+                Console.WriteLine(solved.Length);
+                Console.WriteLine(solved);
+            }
+            else
+            {
+                Console.WriteLine(solved);
+            }
         }
 
-        private bool IsSolved(string trialBoard)
-        {
-            for (int i = 0; i < trialBoard.Length; i++)
-                if ((destBoard[i] == '?')
-                        != (trialBoard[i] == '!'))
-                    return false;
-            return true;
-        }
-
+        //-------
         private string Solve()
         {
             char[,] dirLabels = { { 'N', 'N' }, { 'E', 'E' }, { 'S', 'S' }, { 'W', 'W' } };
             int[,] dirs = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };
-            ISet<string> history = new HashSet<string>();
+
+            ISet<uint> history = new HashSet<uint>();
             LinkedList<Board> open = new LinkedList<Board>();
+            List<string> solution = new List<string>();
+
+            open.AddLast(new Board(currBoard, string.Empty, playerX, playerY));
 
             history.Add(currBoard);
-            open.AddLast(new Board(currBoard, string.Empty, playerX, playerY));
+
 
             while (!open.Count.Equals(0))
             {
                 Board item = open.First();
                 open.RemoveFirst();
-                string cur = item.Cur;
+                uint cur = item.Cur;
                 string sol = item.Sol;
                 int x = item.X;
                 int y = item.Y;
 
                 for (int i = 0; i < dirs.GetLength(0); i++)
                 {
-                    string trial = cur;
+                    uint trial = cur;
                     int dx = dirs[i, 0];
                     int dy = dirs[i, 1];
 
                     // are we standing next to a box ?
-                    if (trial[(y + dy) * nCols + x + dx] == '!')
+                    if (comparing(trial & 65535, x + dx, y + dy))
                     {
                         // can we push it ?
-                        if ((trial = Push(x, y, dx, dy, trial)) != null)
+                        if ((trial = Push(x, y, dx, dy)) != 0)
                         {
                             // or did we already try this one ?
                             if (!history.Contains(trial))
@@ -187,7 +157,7 @@ namespace SokobanSolver
 
                                 string newSol = sol + dirLabels[i, 1];
 
-                                if (IsSolved(trial))
+                                if (IsSolved(trial & 65535))
                                     return newSol;
 
                                 open.AddLast(new Board(trial, newSol, x + dx, y + dy));
@@ -196,19 +166,84 @@ namespace SokobanSolver
                         }
                         // otherwise try changing position
                     }
-                    else if ((trial = Move(x, y, dx, dy, trial)) != null)
+                    else if ((trial = Move(x, y, dx, dy, trial)) != 0)
                     {
                         if (!history.Contains(trial))
                         {
                             string newSol = sol + dirLabels[i, 0];
                             open.AddLast(new Board(trial, newSol, x + dx, y + dy));
                             history.Add(trial);
-
                         }
                     }
                 }
             }
             return "No solution";
         }
+
+        private bool comparing(uint trail, int x, int y)
+        {
+            uint a = trail, b = 0, c = 0;
+
+            b = (a >> 8);
+
+            for (int i = 8; i < 16; i++)
+            {
+                trail &= (uint)~(1 << i);
+            }
+
+            c = trail;
+            //   Console.Write(x + " " + y + " " + b + " " + c);
+            //  Console.WriteLine();
+
+            if (b == x && c == y)
+            {
+             
+                    
+
+             //   Console.WriteLine(true);
+                return (true);
+            }
+
+
+            return (false);
+        }
+
+        private uint Move(int x, int y, int dx, int dy, uint trialBoard)
+        {
+            int newPlayerPos = (y + dy) * nCols + x + dx;
+
+            if (Playboard[newPlayerPos] != '.')
+                return 0;
+
+            for (int i = 16; i < 32; i++)
+            {
+                trialBoard &= (uint)~(1 << i);
+            }
+
+            trialBoard += ((uint)(x + dx) << 24) + ((uint)(y + dy) << 18);
+
+            return trialBoard;
+        }
+
+        private uint Push(int x, int y, int dx, int dy)
+        {
+            int newBoxPos = (y + 2 * dy) * nCols + x + 2 * dx;
+
+            if (Playboard[newBoxPos] != '.')
+                return 0;
+
+            uint a = ((uint)(x + dx) << 24) + ((uint)(y + dy) << 16) + ((uint)(x + 2 * dx) << 8) + ((uint)(y + 2 * dy));
+
+            return a;
+        }
+
+        private bool IsSolved(uint trialBoard)
+        {
+            if (trialBoard == destBoard)
+                return true;
+
+            return false;
+        }
     }
 }
+
